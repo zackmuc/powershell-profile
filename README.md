@@ -19,6 +19,13 @@ Es bietet einen interaktiven **Theme-Manager (`mythemes`)**, mit dem man Themes 
 - Robuste Fehlerbehandlung und saubere Klammerstruktur.
 
 ---
+## 📸 Screenshot
+
+Hier ein Beispiel, wie es aussieht:
+
+![PowerShell Theme Screenshot](Images/screenshot1.png)
+
+---
 
 ## ⚙️ Installation
 
