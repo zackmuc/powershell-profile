@@ -1,31 +1,29 @@
 # =============================
-#  PowerShell Profile (pwsh 7)
-#  Professioneller Theme-Manager mit Preview im neuen Fenster
-#  Features: Add/Remove (1/2), p/a/Enter/c/q, pN/aN-Kürzel, adaptive Farben
-#  Nutzt: oh-my-posh init pwsh --config <URL> --eval | Invoke-Expression
+#  PowerShell Profile (pwsh 7) — Oh My Posh Theme Manager
+#  DE: Professioneller Theme-Manager mit Vorschau im neuen Fenster
+#  EN: Professional theme manager with preview in a new window
+#  Features: Add/Remove (1/2), p/a/Enter/c/q, pN/aN shortcuts, adaptive colors
+#  Uses: oh-my-posh init pwsh --config <URL> --eval | Invoke-Expression
+#  Version: 1.1.0  (Icons enabled in normal + preview windows)
 # =============================
 
 # -----------------------------
 # Persistenz: Pfade & Dateien
+# Persistence: paths & files
 # -----------------------------
-# Merkt sich die zuletzt geladene Theme-URL (wird beim Start wiederhergestellt).
-$LastThemeFile    = "$env:USERPROFILE\.omp_last_theme.txt"
-# JSON-Datei für eigene Themes (Array aus Objekten mit { Name, Url }).
-$CustomThemesFile = "$env:USERPROFILE\.omp_custom_themes.json"
+$LastThemeFile    = "$env:USERPROFILE\.omp_last_theme.txt"     # DE: Zuletzt verwendete Theme-URL / EN: Last used theme URL
+$CustomThemesFile = "$env:USERPROFILE\.omp_custom_themes.json" # DE: Eigene Themes als JSON / EN: Custom themes as JSON
 
-# Falls die Custom-Themes-Datei fehlt, leeres Array anlegen.
 if (-not (Test-Path $CustomThemesFile)) {
     @() | ConvertTo-Json | Set-Content -Path $CustomThemesFile -Encoding utf8
 }
 
 # -----------------------------
 # UI / Farben (adaptiv + manuell)
+# UI / Colors (adaptive + manual)
 # -----------------------------
-# Steuert die Farben der Ausgaben. Nutzt den Konsolen-Hintergrund, um Kontrast zu wählen.
-# Hinweis: In Windows Terminal ist $Host.UI.RawUI.BackgroundColor nicht transparent-aware.
-# Deshalb gibt es den HighContrast-Schalter für harte Kontraste.
 $ThemeUI = [ordered]@{
-    HighContrast    = $false   # Bei Bedarf $true setzen → starke Kontraste erzwingen
+    HighContrast    = $false
     BgColor         = $Host.UI.RawUI.BackgroundColor
     ColorHeader     = 'Cyan'
     ColorHeaderLine = 'DarkCyan'
@@ -35,16 +33,19 @@ $ThemeUI = [ordered]@{
     ColorAction     = 'Gray'
     ColorOK         = 'Green'
     ColorWarn       = 'Yellow'
-    ColorInfo       = 'Gray'       # <- heller gemacht (vorher DarkGray)
+    ColorInfo       = 'Gray'
     ColorErr        = 'Red'
 }
 
 # -----------------------------
-# UI / Farben initialisieren
+# UI-Farben initialisieren
+# Initialize UI colors
 # -----------------------------
 function Initialize-ThemeManagerColors {
-    # Ermittelt (grob), ob dunkler/heller Hintergrund vorliegt und setzt passende Farben.
-    # Bei HighContrast werden helle Akzente erzwungen (unabhängig vom Hintergrund).
+    <#
+      DE: Ermittelt grob dunkel/hell anhand Konsolenhintergrund und setzt Kontrastfarben.
+      EN: Detects dark/light background and sets contrast colors accordingly.
+    #>
     $darkSet = [System.Collections.Generic.HashSet[ConsoleColor]]::new()
     @('Black','DarkBlue','DarkGreen','DarkCyan','DarkRed','DarkMagenta','DarkYellow','DarkGray') |
         ForEach-Object { [void]$darkSet.Add([ConsoleColor]::Parse([ConsoleColor], $_)) }
@@ -67,7 +68,6 @@ function Initialize-ThemeManagerColors {
     }
 
     if ($isDark) {
-        # Dunkler Hintergrund → helle, kräftige Akzente
         $ThemeUI.ColorHeader     = 'Cyan'
         $ThemeUI.ColorHeaderLine = 'DarkCyan'
         $ThemeUI.ColorSection    = 'Gray'
@@ -76,10 +76,9 @@ function Initialize-ThemeManagerColors {
         $ThemeUI.ColorAction     = 'Gray'
         $ThemeUI.ColorOK         = 'Green'
         $ThemeUI.ColorWarn       = 'Yellow'
-        $ThemeUI.ColorInfo       = 'Gray'     # <- hell genug auf dunklem Hintergrund
+        $ThemeUI.ColorInfo       = 'Gray'
         $ThemeUI.ColorErr        = 'Red'
     } else {
-        # Heller Hintergrund → dunklere Akzente
         $ThemeUI.ColorHeader     = 'DarkBlue'
         $ThemeUI.ColorHeaderLine = 'Blue'
         $ThemeUI.ColorSection    = 'DarkGray'
@@ -95,10 +94,10 @@ function Initialize-ThemeManagerColors {
 Initialize-ThemeManagerColors
 
 # -----------------------------
-# UI / Ausgabetools (Header, Status)
+# UI / Ausgabetools
+# UI / Output helpers
 # -----------------------------
 function Show-Header {
-    # Zeichnet einen formatierten Header mit Rahmen und Titel.
     param([string]$Title)
     $line = "────────────────────────────────────────────────────────"
     Write-Host ""
@@ -113,22 +112,41 @@ function Show-Info   { param([string]$t)   Write-Host "ℹ️  $t" -ForegroundCo
 function Show-Err    { param([string]$t)   Write-Host "❌ $t" -ForegroundColor $ThemeUI.ColorErr }
 
 # -----------------------------
-# High-Contrast Toggle (Schnellumschalter)
+# Kontrast-Umschalter
+# Contrast toggle
 # -----------------------------
 function Toggle-ThemeContrast {
-    # Wechselt HighContrast an/aus, initialisiert Farben neu und zeigt Status.
+    <#
+      DE: Schaltet HighContrast an/aus und initialisiert Farben neu.
+      EN: Toggles HighContrast and re-initializes colors.
+    #>
     $ThemeUI.HighContrast = -not $ThemeUI.HighContrast
     Initialize-ThemeManagerColors
     Show-Info ("HighContrast ist jetzt: {0}" -f ($ThemeUI.HighContrast ? 'On' : 'Off'))
 }
 
 # -----------------------------
-# URL-Helfer (z. B. Gist → Raw)
+# Terminal-Icons Auto-Import
+# Terminal-Icons auto import (file/folder glyphs)
+# -----------------------------
+function Ensure-TerminalIcons {
+    <#
+      DE: Importiert das Modul 'Terminal-Icons', falls vorhanden. Gibt Hinweis zur Installation.
+      EN: Imports 'Terminal-Icons' module if available. Prints installation hint otherwise.
+    #>
+    if (Get-Module -ListAvailable -Name 'Terminal-Icons') {
+        try { Import-Module 'Terminal-Icons' -ErrorAction Stop } catch {}
+    } else {
+        Write-Host "ℹ️  Hinweis/Note: Modul 'Terminal-Icons' nicht installiert. Install via:" -ForegroundColor Yellow
+        Write-Host "    Install-Module Terminal-Icons -Scope CurrentUser" -ForegroundColor Yellow
+    }
+}
+
+# -----------------------------
+# URL-Helfer (Gist → Raw)
+# URL helper (Gist → Raw)
 # -----------------------------
 function Fix-ThemeUrl {
-    # Normalisiert eingegebene URLs:
-    # - trimmt Leerzeichen
-    # - wandelt "https://gist.github.com/<user>/<id>" in "https://gist.githubusercontent.com/<user>/<id>/raw" um
     param([string]$Url)
     if ([string]::IsNullOrWhiteSpace($Url)) { return $Url }
     $u = $Url.Trim()
@@ -140,16 +158,15 @@ function Fix-ThemeUrl {
 }
 
 # -----------------------------
-# URL-Validierung (Erreichbarkeit & JSON)
+# URL-Validierung
+# URL validation
 # -----------------------------
 function Test-ThemeUrl {
-    # Prüft, ob die URL erreichbar ist und JSON liefert.
-    # Liefert $true bei Erfolg, sonst $false und zeigt einen Hinweis.
     param([Parameter(Mandatory)][string]$Url)
     try {
         $resp = Invoke-WebRequest -Uri $Url -ErrorAction Stop
-        if (-not $resp.Content) { throw "Leere Antwort" }
-        try { $null = $resp.Content | ConvertFrom-Json } catch { throw "Kein valides JSON" }
+        if (-not $resp.Content) { throw "Leere Antwort / Empty response" }
+        try { $null = $resp.Content | ConvertFrom-Json } catch { throw "Kein valides JSON / Not valid JSON" }
         return $true
     } catch {
         Show-Warn "Ungültige Theme-URL: $($_.Exception.Message)"
@@ -158,132 +175,164 @@ function Test-ThemeUrl {
 }
 
 # -----------------------------
-# Theme laden (Apply)
+# Theme laden (Apply) + Icons
+# Load theme (apply) + icons
 # -----------------------------
 function Load-Theme {
-    # Lädt ein Oh-My-Posh-Theme zuverlässig für die aktuelle Session:
-    # offizielle Initialisierung mit --eval + Invoke-Expression.
-    # Persistiert die URL in $LastThemeFile.
+    <#
+      DE: Lädt ein Oh-My-Posh-Theme für die aktuelle Session, importiert Icons
+          und speichert die URL als 'zuletzt verwendet'.
+      EN: Loads an Oh My Posh theme for the current session, imports icons,
+          and stores the URL as 'last used'.
+    #>
     param([Parameter(Mandatory)][string]$ThemeUrl)
 
     $ThemeUrl = Fix-ThemeUrl $ThemeUrl
     if (-not (Test-ThemeUrl $ThemeUrl)) { throw "Theme nicht erreichbar oder kein gültiges JSON." }
 
+    # Prompt setzen / Set prompt
     oh-my-posh init pwsh --config $ThemeUrl --eval | Invoke-Expression
 
+    # Icons aktivieren / Enable icons
+    Ensure-TerminalIcons
+
+    # Zuletzt genutztes Theme sichern / Persist last used theme
     $ThemeUrl | Out-File -FilePath $LastThemeFile -Encoding utf8
-    Show-Ok "Theme geladen: $ThemeUrl"
+    Show-Ok "Theme geladen / applied: $ThemeUrl"
 }
 
 # -----------------------------
-# Preview im neuen Fenster (-NoProfile)
+# Preview im neuen Fenster (+ Icons)
+# Preview in new window (+ icons)
 # -----------------------------
 function Preview-Theme {
-    # Öffnet ein neues pwsh-Fenster (ohne Profil), lädt dort das Theme,
-    # zeigt einen gut lesbaren Hinweis (adaptive Farbe) und lässt das Fenster offen.
-    # Nach dem Schließen entscheidet der Benutzer im Hauptfenster, ob angewendet wird.
+    <#
+      DE: Startet neues pwsh-Fenster ohne Profil, lädt Theme + Terminal-Icons
+          und zeigt eine Statuszeile mit gutem Kontrast.
+      EN: Starts a new pwsh window without profile, loads theme + Terminal-Icons,
+          and prints a high-contrast status line.
+    #>
     param([Parameter(Mandatory)][string]$ThemeUrl)
 
     $ThemeUrl = Fix-ThemeUrl $ThemeUrl
     if (-not (Test-ThemeUrl $ThemeUrl)) { Show-Warn "Preview abgebrochen (URL ungültig)."; return }
 
-    # URL sicher für eingebettetes Kommando quoten
+    # URL sicher quoten / safely escape URL
     $escUrl = $ThemeUrl.Replace('`','``').Replace('"','`"')
 
-    # Kinderfenster ohne Profil: verhindert Startmeldungen/Alttheme
-    # Adaptive Lesefarbe (hell/dunkel) für die Statuszeile im Preview-Fenster
+    # Kinderkommando / child command
     $cmd =
         "oh-my-posh init pwsh --config `"$escUrl`" --eval | Invoke-Expression; " +
+        "if (Get-Module -ListAvailable -Name 'Terminal-Icons') { Import-Module 'Terminal-Icons' }; " +
         "`$fg='Yellow'; " +
-        "try { " +
-        "  `$bg=`$Host.UI.RawUI.BackgroundColor; " +
-        "  if (@([ConsoleColor]::Black,[ConsoleColor]::DarkBlue,[ConsoleColor]::DarkGreen,[ConsoleColor]::DarkCyan,[ConsoleColor]::DarkRed,[ConsoleColor]::DarkMagenta,[ConsoleColor]::DarkYellow,[ConsoleColor]::DarkGray) -contains `$bg) { `$fg='Yellow' } else { `$fg='DarkBlue' } " +
-        "} catch {}; " +
-        "Write-Host '🔍 Preview aktiv. Fenster schließen (X/exit), um zurückzukehren.' -ForegroundColor `$fg"
+        "try { `$bg=`$Host.UI.RawUI.BackgroundColor; " +
+        "  if (@([ConsoleColor]::Black,[ConsoleColor]::DarkBlue,[ConsoleColor]::DarkGreen,[ConsoleColor]::DarkCyan,[ConsoleColor]::DarkRed,[ConsoleColor]::DarkMagenta,[ConsoleColor]::DarkYellow,[ConsoleColor]::DarkGray) -contains `$bg) { `$fg='Yellow' } else { `$fg='DarkBlue' } } catch {}; " +
+        "Write-Host '🔍 Preview aktiv. Fenster schließen (X/exit) … / Close this window to return.' -ForegroundColor `$fg"
 
     try {
+        # Hinweis: Mit Windows Terminal als Standard öffnet sich ein neuer Tab.
+        # Note: If Windows Terminal is default, this opens a new tab.
         Start-Process -FilePath "pwsh" -ArgumentList @("-NoProfile","-NoExit","-NoLogo","-Command",$cmd) | Out-Null
-        Show-Info "Preview-Fenster geöffnet. Nach dem Schließen entscheidest du hier."
+        Show-Info "Preview-Fenster geöffnet / Preview window opened. Nach dem Schließen hier entscheiden."
     } catch {
-        Show-Err "Konnte Preview-Fenster nicht starten: $_"
+        Show-Err "Konnte Preview-Fenster nicht starten / Failed to start preview: $_"
     }
 }
 
 # -----------------------------
-# Custom-Themes laden (JSON lesen)
+# Custom-Themes laden
+# Load custom themes
 # -----------------------------
 function Load-CustomThemes {
-    # Liest die JSON-Datei und gibt ein Array von Objekten { Name, Url } zurück.
-    # Bei Fehlern wird ein leeres Array geliefert und eine Fehlermeldung ausgegeben.
+    <#
+      DE: Liest JSON-Datei und liefert Objekte { Name, Url }.
+      EN: Reads JSON file and returns objects { Name, Url }.
+    #>
     if (Test-Path $CustomThemesFile) {
         try { return Get-Content $CustomThemesFile -Raw | ConvertFrom-Json }
-        catch { Show-Err "Konnte Custom-Themes nicht lesen (defektes JSON)."; return @() }
+        catch { Show-Err "Konnte Custom-Themes nicht lesen / Failed to read custom themes (JSON)."; return @() }
     } else { return @() }
 }
 
 # -----------------------------
-# Custom-Themes speichern (JSON schreiben)
+# Custom-Themes speichern
+# Save custom themes
 # -----------------------------
 function Save-CustomThemes {
-    # Speichert die Liste (nach Name sortiert) wieder in die JSON-Datei.
+    <#
+      DE: Speichert Liste (nach Name sortiert) zurück nach JSON.
+      EN: Saves list (sorted by Name) back to JSON.
+    #>
     param([Parameter(Mandatory)][array]$CustomThemes)
     ($CustomThemes | Sort-Object Name) | ConvertTo-Json | Set-Content -Path $CustomThemesFile -Encoding utf8
 }
 
 # -----------------------------
-# Custom-Theme hinzufügen (interaktiv)
+# Custom-Theme hinzufügen
+# Add custom theme
 # -----------------------------
 function Add-CustomTheme {
-    # Fragt URL & Name ab, validiert die URL, speichert den Eintrag.
-    # Rückgabe: Hashtable { Name, Url } oder $null.
+    <#
+      DE: Erfragt Name & URL, validiert und speichert.
+      EN: Prompts for name & URL, validates and saves.
+    #>
     param([string]$Url)
 
-    if (-not $Url) { $Url = Read-Host "Theme-URL (JSON) eingeben" }
+    if (-not $Url) { $Url = Read-Host "Theme-URL (JSON) eingeben / enter URL" }
     $Url = Fix-ThemeUrl $Url
     if (-not (Test-ThemeUrl $Url)) { return $null }
 
-    $name = Read-Host "Name für das Theme"
-    if ([string]::IsNullOrWhiteSpace($name)) { Show-Warn "Kein Name eingegeben."; return $null }
+    $name = Read-Host "Name für das Theme / name for the theme"
+    if ([string]::IsNullOrWhiteSpace($name)) { Show-Warn "Kein Name / No name."; return $null }
 
     $list = @(Load-CustomThemes)
     $list += [PSCustomObject]@{ Name = $name; Url = $Url }
     Save-CustomThemes $list
-    Show-Ok "Theme '$name' hinzugefügt."
+    Show-Ok "Theme hinzugefügt / added: '$name'"
     return @{ Name = $name; Url = $Url }
 }
 
 # -----------------------------
-# Custom-Theme entfernen (interaktiv)
+# Custom-Theme entfernen
+# Remove custom theme
 # -----------------------------
 function Remove-CustomTheme {
-    # Zeigt nummerierte Liste der Einträge und löscht die gewählte Nummer.
+    <#
+      DE: Zeigt nummerierte Liste & löscht Auswahl.
+      EN: Shows numbered list & deletes the chosen one.
+    #>
     $list = @(Load-CustomThemes)
-    if (-not $list -or $list.Count -eq 0) { Show-Warn "Keine Custom-Themes vorhanden."; return }
+    if (-not $list -or $list.Count -eq 0) { Show-Warn "Keine Custom-Themes vorhanden / No custom themes."; return }
 
-    Show-Header "Custom-Theme löschen"
+    Show-Header "Custom-Theme löschen / delete custom theme"
     $i = 0
     $list | ForEach-Object { $script:i++; Write-Host ("  {0,2}) {1}" -f $i, $_.Name) -ForegroundColor DarkYellow }
-    $pick = Read-Host "Nummer (oder Enter zum Abbrechen)"
+    $pick = Read-Host "Nummer (oder Enter=Abbruch) / number (Enter=cancel)"
     if ($pick -as [int] -and $pick -ge 1 -and $pick -le $list.Count) {
         $name = $list[$pick-1].Name
         $list = $list | Where-Object { $_.Name -ne $name }
         Save-CustomThemes $list
-        Show-Warn "'$name' gelöscht."
+        Show-Warn "'$name' gelöscht / deleted."
     }
 }
 
 # -----------------------------
 # Menü: mythemes (interaktiv)
+# Menu: mythemes (interactive)
 # -----------------------------
 function mythemes {
-    # Interaktiver Manager mit:
-    # - 1 = Add, 2 = Remove
-    # - Danach eingebaute Themes (Cyan) und eigene Themes (Gelb)
-    # - Zahl → dann p/a/Enter/c/q
-    # - Direktkürzel: pN (Preview von N), aN (Apply von N)
-    # Nach Apply (Enter/a) wird das Menü beendet.
-
-    # Eingebaute Themes (deine Vorauswahl):
+    <#
+      DE:
+        - 1 = Hinzufügen, 2 = Entfernen
+        - Zahl → dann p/a/Enter/c/q
+        - Kürzel: pN (Preview von N), aN (Apply von N)
+        - Nach Apply (Enter/a) wird das Menü beendet
+      EN:
+        - 1 = add, 2 = remove
+        - number → then p/a/Enter/c/q
+        - shortcuts: pN (preview N), aN (apply N)
+        - after apply (Enter/a) the menu exits
+    #>
     $builtIn = @(
         @{ Name='A-Retro-Fade';         Url='https://gist.githubusercontent.com/zackmuc/321d436943f6be6e15ccc21f3d5a96df/raw/901b6ba5bb212d3115b1fb388d0508c7c3a753ea/a-retro-fade.omp.json' }
         @{ Name='M365Princess';         Url='https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/M365Princess.omp.json' }
@@ -295,19 +344,18 @@ function mythemes {
 
     while ($true) {
         Clear-Host
-        Show-Header "Theme-Manager"
+        Show-Header "Theme-Manager / theme manager"
 
-        # Optionen exakt in Anzeige-Reihenfolge aufbauen
         $options = New-Object System.Collections.Generic.List[Hashtable]
 
-        # 1 & 2: Aktionen
-        Write-Host ("  {0,2}) {1}" -f 1, "➕ Custom-Theme hinzufügen") -ForegroundColor $ThemeUI.ColorAction
-        Write-Host ("  {0,2}) {1}" -f 2, "🗑️  Custom-Theme entfernen") -ForegroundColor $ThemeUI.ColorAction
+        # Aktionen / actions
+        Write-Host ("  {0,2}) {1}" -f 1, "➕ Custom-Theme hinzufügen / add custom theme") -ForegroundColor $ThemeUI.ColorAction
+        Write-Host ("  {0,2}) {1}" -f 2, "🗑️  Custom-Theme entfernen / remove custom theme") -ForegroundColor $ThemeUI.ColorAction
         $options.Add(@{ Kind='Action'; Name='Add';    Url=$null })
         $options.Add(@{ Kind='Action'; Name='Remove'; Url=$null })
 
-        # Eingebaute Themes
-        Show-Section "Eingebaute Themes"
+        # Eingebaute Themes / built-ins
+        Show-Section "Eingebaute Themes / built-in themes"
         $n = $options.Count
         foreach ($t in $builtIn) {
             $n++
@@ -315,10 +363,10 @@ function mythemes {
             Write-Host ("  {0,2}) {1}" -f $n, $t.Name) -ForegroundColor $ThemeUI.ColorBuiltIn
         }
 
-        # Eigene Themes
+        # Eigene Themes / custom
         $custom = @(Load-CustomThemes)
         if ($custom.Count -gt 0) {
-            Show-Section "Eigene Themes"
+            Show-Section "Eigene Themes / custom themes"
             foreach ($t in $custom) {
                 $n++
                 $options.Add(@{ Kind='Custom'; Name=$t.Name; Url=$t.Url })
@@ -330,16 +378,16 @@ function mythemes {
         $choice = Read-Host "Zahl / p<Zahl> (Preview) / a<Zahl> (Apply) / q (Quit)"
         if ($choice -match '^\s*q\s*$') { break }
 
-        # Direktkürzel pN / aN
+        # Direkt pN / aN
         if ($choice -match '^\s*p(\d+)\s*$') {
             $idx = [int]$matches[1]
             if ($idx -ge 1 -and $idx -le $options.Count -and $options[$idx-1].Kind -ne 'Action') {
                 $sel = $options[$idx-1]
                 Preview-Theme $sel.Url
-                $after = Read-Host "Preview fertig. Übernehmen (a/Enter) oder Abbrechen (c)?"
+                $after = Read-Host "Preview fertig. Übernehmen (a/Enter) oder Abbrechen (c)? / After preview: apply (a/Enter) or cancel (c)?"
                 if ([string]::IsNullOrWhiteSpace($after) -or $after -match '^\s*a\s*$') { try { Load-Theme $sel.Url } catch { Show-Err $_ }; break }
                 else { continue }
-            } else { Show-Warn "Ungültiger Index." ; Start-Sleep -Milliseconds 600; continue }
+            } else { Show-Warn "Ungültiger Index / invalid index." ; Start-Sleep -Milliseconds 600; continue }
         }
         if ($choice -match '^\s*a(\d+)\s*$') {
             $idx = [int]$matches[1]
@@ -347,38 +395,36 @@ function mythemes {
                 $sel = $options[$idx-1]
                 try { Load-Theme $sel.Url } catch { Show-Err $_ }
                 break
-            } else { Show-Warn "Ungültiger Index." ; Start-Sleep -Milliseconds 600; continue }
+            } else { Show-Warn "Ungültiger Index / invalid index." ; Start-Sleep -Milliseconds 600; continue }
         }
 
         # Normale Zahl
-        if (-not ($choice -as [int])) { Show-Warn "Bitte eine gültige Zahl eingeben."; Start-Sleep -Milliseconds 600; continue }
+        if (-not ($choice -as [int])) { Show-Warn "Bitte Zahl eingeben / please enter a number."; Start-Sleep -Milliseconds 600; continue }
         $pick = [int]$choice
-        if ($pick -lt 1 -or $pick -gt $options.Count) { Show-Warn "Nummer außerhalb der Liste."; Start-Sleep -Milliseconds 600; continue }
+        if ($pick -lt 1 -or $pick -gt $options.Count) { Show-Warn "Nummer außerhalb der Liste / out of range."; Start-Sleep -Milliseconds 600; continue }
 
         $sel = $options[$pick-1]
 
-        # Aktionen 1/2 direkt
+        # Aktionen 1/2
         if ($sel.Kind -eq 'Action') {
             if     ($pick -eq 1) { Add-CustomTheme | Out-Null }
             elseif ($pick -eq 2) { Remove-CustomTheme }
-            Read-Host "Weiter mit Enter"
+            Read-Host "Weiter mit Enter / press Enter to continue"
             continue
         }
 
-        # Schritt 2: p/a/Enter/c/q für gewähltes Theme
-        Show-Section ("Ausgewählt: {0}" -f $sel.Name)
-        $action = Read-Host "Aktion: Preview (p) im neuen Fenster, Apply (a/Enter), Cancel (c), Quit (q)"
-
-        if     ($action -match '^\s*q\s*$') { break }             # Beenden
-        elseif ($action -match '^\s*c\s*$') { continue }          # Zurück zur Liste
+        # Schritt 2
+        Show-Section ("Ausgewählt / selected: {0}" -f $sel.Name)
+        $action = Read-Host "Aktion: Preview (p), Apply (a/Enter), Cancel (c), Quit (q)"
+        if     ($action -match '^\s*q\s*$') { break }
+        elseif ($action -match '^\s*c\s*$') { continue }
         elseif ($action -match '^\s*p\s*$') {
-            Preview-Theme $sel.Url                                  # Preview-Fenster
-            $after = Read-Host "Preview fertig. Übernehmen (a/Enter) oder Abbrechen (c)?"
+            Preview-Theme $sel.Url
+            $after = Read-Host "Preview fertig. Übernehmen (a/Enter) oder Abbrechen (c)? / After preview: apply (a/Enter) or cancel (c)?"
             if ([string]::IsNullOrWhiteSpace($after) -or $after -match '^\s*a\s*$') { try { Load-Theme $sel.Url } catch { Show-Err $_ }; break }
             else { continue }
         }
         else {
-            # Default = Apply (Enter) oder 'a'
             try { Load-Theme $sel.Url } catch { Show-Err $_ }
             break
         }
@@ -387,22 +433,22 @@ function mythemes {
 
 # -----------------------------
 # Startverhalten (Default/Last)
+# Startup behavior (default/last)
 # -----------------------------
-# Beim Start: Versuche letztes Theme zu laden; sonst nutze sinnvolles Default.
 $DefaultTheme = "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/M365Princess.omp.json"
 
 if (Test-Path $LastThemeFile) {
     $last = Get-Content $LastThemeFile -Raw
     try {
         Load-Theme $last
-        Show-Info "Zuletzt geladenes Theme: $last"
+        Show-Info "Zuletzt geladenes Theme / last loaded theme: $last"
     } catch {
-        Show-Warn "Konnte letztes Theme nicht laden. Nutze Default."
+        Show-Warn "Konnte letztes Theme nicht laden. Nutze Default. / Failed to load last theme, using default."
         try { Load-Theme $DefaultTheme } catch {}
     }
 } else {
     try { Load-Theme $DefaultTheme } catch {}
 }
 
-Show-Info "Tipp: 'mythemes' → Zahl / p<Zahl> / a<Zahl> → (a/Enter) anwenden, (c) abbrechen, (q) beenden."
-Show-Info "Eigene Themes verwalten: Add-CustomTheme / Remove-CustomTheme"
+Show-Info "Tipp/Tip: 'mythemes' → Zahl / p<Zahl> / a<Zahl> → (a/Enter) anwenden, (c) abbrechen, (q) beenden."
+Show-Info "Eigene Themes / custom: Add-CustomTheme / Remove-CustomTheme"
