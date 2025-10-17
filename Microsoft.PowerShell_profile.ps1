@@ -1,3 +1,185 @@
+# -----------------------------
+# AUTO-FIX für GitHub-Blob-Links (global, sicher)
+# AUTO-FIX for GitHub blob links (global, safe)
+# -----------------------------
+# Korrigiert /blob/ und /refs/heads/ in GitHub-URLs automatisch zu raw.githubusercontent.com
+# Automatically converts /blob/ and /refs/heads/ in GitHub URLs to raw.githubusercontent.com
+# Greift für alle HTTP-Aufrufe (Invoke-WebRequest/Invoke-RestMethod), auch aus Menüs/Skripten.
+# Hooks into all HTTP calls (Invoke-WebRequest/Invoke-RestMethod), even from menus/scripts.
+
+# -----------------------------
+# URL-Konvertierung (Blob/Refs → Raw)
+# URL conversion (Blob/Refs → Raw)
+# -----------------------------
+function Convert-GitHubBlobToRaw {
+    <#
+    .SYNOPSIS
+        Wandelt GitHub-Blob-/refs/heads-Links in gültige Raw-Links um.
+        Converts GitHub blob/refs/heads links into valid raw links.
+    .PARAMETER Url
+        Die zu konvertierende URL.
+        The URL to be converted.
+    .OUTPUTS
+        String (unverändert oder konvertiert)
+        String (unchanged or converted)
+    #>
+    param([Parameter(Mandatory)][string]$Url)
+
+    if ($null -eq $Url) { return $Url }
+
+    # Erkennung und Konvertierung
+    # Detection and conversion
+    if ($Url -match '^https://github\.com/.+?/blob/.+?(\.json)($|[?#])' -or
+        $Url -match '^https://github\.com/.+?/refs/heads/.+?(\.json)($|[?#])' -or
+        $Url -match '^https://github\.com/.+?/blob/.+?/') {
+
+        # Domain ersetzen
+        # Replace domain
+        $Url = $Url -replace '^https://github\.com', 'https://raw.githubusercontent.com'
+
+        # /blob/ entfernen
+        # Remove /blob/
+        $Url = $Url -replace '/blob/', '/'
+
+        # /refs/heads/ entfernen
+        # Remove /refs/heads/
+        $Url = $Url -replace '/refs/heads/', '/'
+
+        # doppelte Slashes bereinigen (außer nach dem Schema)
+        # Clean up duplicate slashes (except right after scheme)
+        $Url = $Url -replace '([^:])/+', '$1/'
+    }
+
+    return $Url
+}
+
+# -----------------------------
+# HTTP-Aufrufe abfangen (URL nur anpassen, sonst unverändert)
+# Intercept HTTP calls (adjust URL only, otherwise pass-through)
+# -----------------------------
+if (Get-Command Microsoft.PowerShell.Utility\Invoke-WebRequest -ErrorAction SilentlyContinue) {
+    Set-Item -Path Function:Invoke-WebRequest -Value {
+        [CmdletBinding()]
+        param(
+            [Parameter(Position=0, ValueFromPipelineByPropertyName=$true)][Alias('U')][string]$Uri,
+            [Parameter()][hashtable]$Headers,
+            [Parameter()][object]$Body,
+            [Parameter()][switch]$UseBasicParsing
+        )
+        $params = @{}
+foreach ($k in $PSBoundParameters.Keys) { $params[$k] = $PSBoundParameters[$k] }
+if ($PSBoundParameters.ContainsKey('Uri') -and $null -ne $Uri) {
+            # URL vor dem Request konvertieren
+            # Convert URL before the request
+            $params['Uri'] = Convert-GitHubBlobToRaw -Url $Uri
+        }
+        Microsoft.PowerShell.Utility\Invoke-WebRequest @params
+    }
+}
+
+if (Get-Command Microsoft.PowerShell.Utility\Invoke-RestMethod -ErrorAction SilentlyContinue) {
+    Set-Item -Path Function:Invoke-RestMethod -Value {
+        [CmdletBinding()]
+        param(
+            [Parameter(Position=0, ValueFromPipelineByPropertyName=$true)][Alias('U')][string]$Uri,
+            [Parameter()][hashtable]$Headers,
+            [Parameter()][object]$Body
+        )
+        $params = @{}
+foreach ($k in $PSBoundParameters.Keys) { $params[$k] = $PSBoundParameters[$k] }
+if ($PSBoundParameters.ContainsKey('Uri') -and $null -ne $Uri) {
+            # URL vor dem Request konvertieren
+            # Convert URL before the request
+            $params['Uri'] = Convert-GitHubBlobToRaw -Url $Uri
+        }
+        Microsoft.PowerShell.Utility\Invoke-RestMethod @params
+    }
+}
+
+# -----------------------------
+# ENDE DES SICHEREN VORSPANNS
+# END OF SAFE PRELUDE
+# -----------------------------
+# -----------------------------
+# BEGINN: Originalprofil (unverändert)
+# BEGIN: Original profile (unchanged)
+# -----------------------------
+# ============================================================================
+# SAFE PRELUDE: Normalize GitHub blob URLs for any `oh-my-posh` call
+# - Non-invasive: original profile stays intact below.
+# - Intercepts ALL `oh-my-posh` calls and normalizes --config/-c arguments.
+# - Calls the REAL oh-my-posh executable after normalization.
+# ============================================================================
+
+# Define once: Resolve-GitHubRawUrl
+if (-not (Get-Command Resolve-GitHubRawUrl -ErrorAction SilentlyContinue)) {
+    function Resolve-GitHubRawUrl {
+        param([Parameter(Mandatory)][string]$Url)
+        if ($Url -match 'github\.com/.*/blob/') {
+            return $Url -replace '^https://github\.com', 'https://raw.githubusercontent.com' -replace '/blob/', '/'
+        }
+        return $Url
+    }
+}
+
+# Define once: global wrapper for oh-my-posh
+# (Only create if a function with that name doesn't already exist.)
+if (-not (Get-Command 'oh-my-posh' -CommandType Function -ErrorAction SilentlyContinue)) {
+    function global:oh-my-posh {
+        [CmdletBinding()]
+        param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Args)
+
+        # Find the real executable to avoid recursion
+        $realCmd = (Get-Command -All oh-my-posh | Where-Object { $_.CommandType -eq 'Application' } | Select-Object -First 1)
+        if (-not $realCmd) {
+            throw "Konnte das oh-my-posh-Binary nicht finden."
+        }
+        $real = $realCmd.Source
+
+        # Normalize arguments
+        $normalized = @()
+        for ($i = 0; $i -lt $Args.Count; $i++) {
+            $a = $Args[$i]
+
+            # --config=value or -c=value
+            if ($a -match '^(--config|-c)=(.+)$') {
+                $prefix, $val = $a -split '=', 2
+                $val = Resolve-GitHubRawUrl -Url $val
+                $normalized += "$prefix=$val"
+                continue
+            }
+
+            # --config value or -c value
+            if ($a -ieq '--config' -or $a -ieq '-c') {
+                $normalized += $a
+                if ($i + 1 -lt $Args.Count) {
+                    $next = $Args[$i + 1]
+                    $next = Resolve-GitHubRawUrl -Url $next
+                    $normalized += $next
+                    $i++
+                }
+                continue
+            }
+
+            # bare JSON URL (fallback)
+            if ($a -match '^https?://.*\.json($|\?)') {
+                $normalized += (Resolve-GitHubRawUrl -Url $a)
+                continue
+            }
+
+            $normalized += $a
+        }
+
+        & $real @normalized
+    }
+}
+
+# ============================================================================
+# END SAFE PRELUDE
+# ============================================================================
+
+
+# ===== BEGIN ORIGINAL PROFILE =====
 # =============================
 #  PowerShell Profile (pwsh 7) — Oh My Posh Theme Manager
 #  DE: Professioneller Theme-Manager mit Vorschau im neuen Fenster
@@ -452,3 +634,33 @@ if (Test-Path $LastThemeFile) {
 
 Show-Info "Tipp/Tip: 'mythemes' → Zahl / p<Zahl> / a<Zahl> → (a/Enter) anwenden, (c) abbrechen, (q) beenden."
 Show-Info "Eigene Themes / custom: Add-CustomTheme / Remove-CustomTheme"
+
+# ===== END ORIGINAL PROFILE =====
+
+# -----------------------------
+# ENDE: Originalprofil
+# END: Original profile
+# -----------------------------
+
+
+# -----------------------------
+# Selbsttest für den Blob-Fix
+# Self-test for Blob-Fix
+# -----------------------------
+# Prüft beim Start, ob die Blob-Korrektur aktiv ist.
+# Checks at startup whether the Blob fix is active.
+
+try {
+    $testUrl = "https://github.com/JanDeDobbeleer/oh-my-posh/blob/main/themes/gmay.omp.json"
+    $converted = Convert-GitHubBlobToRaw -Url $testUrl
+
+    if ($converted -match 'raw\.githubusercontent\.com' -and (Test-Path Function:\Invoke-WebRequest)) {
+        Write-Host "✅ Blob-Fix aktiv (Profil geladen)" -ForegroundColor Green
+    }
+    else {
+        Write-Host "⚠️ Blob-Fix nicht aktiv oder überschrieben" -ForegroundColor Yellow
+    }
+}
+catch {
+    Write-Host "⚠️ Blob-Fix-Test fehlgeschlagen: $($_.Exception.Message)" -ForegroundColor Red
+}

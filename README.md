@@ -1,5 +1,5 @@
-# 🖥️ PowerShell-Profil & Theme Manager (DE)
-> Persönliches PowerShell-Profil (pwsh 7) mit **oh-my-posh**, interaktivem **Theme-Manager**, Datei-/Ordner-**Icons** (Terminal-Icons) und **Preview** in neuem Fenster/Tab. Zweisprachige Doku – unten folgt die EN-Version.
+# 🖥️ PowerShell-Profil & Theme Manager (DE/EN)
+> Persönliches PowerShell-Profil (pwsh 7) mit **oh-my-posh**, interaktivem **Theme-Manager**, Datei-/Ordner-**Icons** (Terminal-Icons), **automatischer GitHub-Blob→Raw-Korrektur**, sowie **Selbsttest** beim Start. Zweisprachige Doku – EN folgt unten.
 
 <p align="left">
   <img alt="PowerShell" src="https://img.shields.io/badge/PowerShell-7.x-5391FE?logo=powershell&logoColor=white">
@@ -9,26 +9,29 @@
 </p>
 
 ## ✨ Features
-- **Letztes Theme** wird beim Start geladen, sonst Fallback auf ein **Default**.
+- **Letztes Theme** wird beim Start geladen; Fallback auf **Default**, falls keins vorhanden ist.
 - Interaktives Menü **`mythemes`**: Zahl → anwenden, **`pN`** → Preview, **`aN`** → Apply, **`c`/`q`** → abbrechen/beenden.
 - **Eigene Themes** komfortabel **hinzufügen/entfernen** (JSON-basiert).
-- **Icons** in `ls`/`Get-ChildItem` über **Terminal-Icons** (Auto-Import).
+- **Icons** in `ls`/`Get-ChildItem` via **Terminal-Icons** (Auto-Import).
 - **Preview** in neuem Fenster/Tab (ohne Profil), lädt Theme **und** Terminal-Icons.
-- Adaptive Farben, **High-Contrast-Toggle**, robuste Fehlerbehandlung.
+- **Automatische GitHub-URL-Korrektur**: `github.com/.../blob/...` bzw. `.../refs/heads/...` wird bei HTTP-Requests zu `raw.githubusercontent.com/...` normalisiert (wir patchen **Invoke-WebRequest/Invoke-RestMethod**).
+- **Selbsttest beim Start**: zeigt **„✅ Blob-Fix aktiv (Profil geladen)“**, wenn der Fix greift; sonst Warnung.
+- Robuste Fehlerbehandlung, adaptive Farben, **High-Contrast-Toggle**.
 
-## 📸 Screenshot
-![PowerShell Theme Screenshot](Images/screenshot1.png)
+## 📸 Screenshots
+- Prompt & Menü: `Images/screenshot1.png`
+- Optional (wenn genutzt): Bundesliga-Segment in einem Theme mit Live-/Next-Match für den **FC Bayern**.
 
 ## 🧩 Voraussetzungen
-- **PowerShell 7**
+- **PowerShell 7** (getestet mit 7.6 Preview – Besonderheiten siehe Troubleshooting)
 - **oh-my-posh**
-- **Nerd Font** in Windows Terminal (z. B. *FiraCode Nerd Font Mono*)
+- **Nerd Font** im Windows Terminal (z. B. *FiraCode Nerd Font Mono*)
 - **Terminal-Icons** (einmalig installieren, Auto-Import im Profil):
 ```powershell
 Install-Module Terminal-Icons -Scope CurrentUser
 ```
 
-> Stelle im **Windows Terminal → Profil PowerShell → Darstellung → Schriftart** den **Nerd Font** ein (z. B. *FiraCode Nerd Font Mono*), sonst fehlen die Icons.
+> Stelle im **Windows Terminal → PowerShell → Darstellung → Schriftart** deinen **Nerd Font** ein (z. B. *FiraCode Nerd Font Mono*), sonst fehlen die Icons.
 
 ## ⚙️ Installation / Update
 ```powershell
@@ -54,38 +57,48 @@ p3            # Preview von #3 in neuem Fenster/Tab
 a3            # Apply von #3 direkt
 q             # Beenden
 ```
-**Custom Themes**  
+### Custom Themes
 - Datei: `%USERPROFILE%\.omp_custom_themes.json` (automatisch)  
-- Felder: `Name`, `Url`  
+- Felder: `Name`, `Url` (Akzeptiert **Raw-URLs** und **GitHub-Blob-Links** – letztere werden beim Abruf automatisch korrigiert)  
 - Alternativ: `Add-CustomTheme` / `Remove-CustomTheme`
 
 ## 🧰 Troubleshooting
+- **„Kein valides JSON“ bei GitHub-Link?**  
+  Nutze **Raw**: `https://raw.githubusercontent.com/<user>/<repo>/<branch>/<path>.omp.json`  
+  *Hinweis*: Durch den **Blob-Fix** werden `.../blob/...`-Links jetzt **automatisch** beim HTTP-Abruf korrigiert. Wenn das dennoch erscheint, prüfe:
+  1) Startest du mit `pwsh -NoProfile`? (Dann wird das Profil nicht geladen.)  
+  2) Lädst du **Windows PowerShell 5.1** statt **PowerShell 7**? (Anderes Profil.)  
+  3) Überschreibt ein Modul nachträglich `Invoke-WebRequest`/`Invoke-RestMethod`?  
+  4) Nutzt ein Tool direkten **HttpClient** statt PowerShell-Cmdlets? (Dann hilft ein Pre-Fetch über das Profil, z. B. in eine ENV-Variable.)
+- **PowerShell 7.6 Preview:**
+  - `PSBoundParameters.Clone()` ist dort nicht verfügbar → im Profil durch **manuelle Kopie** ersetzt.
+  - Alias-Konflikt `Uri` behoben (Alias nur noch `U`).  
 - **Icons fehlen?** Nerd Font aktiv? `Terminal-Icons` installiert/geladen?
-- **Preview ohne Icons?** Das Skript lädt Terminal-Icons dort explizit; prüfe, dass auch das Preview-Fenster den Nerd Font nutzt (Windows Terminal als Standard-Host empfohlen).
-- **Schlechter Kontrast?** `Toggle-ThemeContrast` ausführen.
+- **Preview ohne Icons?** Preview lädt Terminal-Icons explizit; achte auf Nerd-Font im Preview-Host.
+- **Niedriger Kontrast?** `Toggle-ThemeContrast` ausführen.
 
 ## 🏷️ Versionierung & Releases
 - Tags: `v1.0`, `v1.1`, …  
 - Releases: GitHub → **Releases**
 
-**Neuen Release (z. B. v1.1) anlegen**
+**Neuen Release (z. B. v1.2) anlegen**
 ```powershell
-git tag v1.1
-git push origin v1.1
+git tag v1.2
+git push origin v1.2
 
 # GitHub-CLI (empfohlen)
-gh release create v1.1 `
-  --title "Version 1.1" `
-  --notes "DE: Icons automatisch (normal + Preview), zweisprachige Doku.
-EN: Icons auto (normal + preview), bilingual docs."
+gh release create v1.2 `
+  --title "Version 1.2" `
+  --notes "DE: Blob-Fix (GitHub-Blob→Raw), Selbsttest, Doku aktualisiert.
+EN: Blob fix (GitHub blob→raw), self-test, updated docs."
 # Optional Datei anhängen:
-# gh release create v1.1 Microsoft.PowerShell_profile.ps1 --title "Version 1.1" --notes "..."
+# gh release create v1.2 Microsoft.PowerShell_profile.ps1 --title "Version 1.2" --notes "..."
 ```
 
 ---
 
 # 🖥️ PowerShell Profile & Theme Manager (EN)
-> Personal PowerShell profile (pwsh 7) with **oh-my-posh**, interactive **theme manager**, file/folder **icons** (Terminal-Icons), and **preview** in a new window/tab. Bilingual docs — German section above.
+> Personal PowerShell profile (pwsh 7) with **oh-my-posh**, interactive **theme manager**, file/folder **icons** (Terminal-Icons), an **automatic GitHub blob→raw correction**, and a **startup self-test**.
 
 <p align="left">
   <img alt="PowerShell" src="https://img.shields.io/badge/PowerShell-7.x-5391FE?logo=powershell&logoColor=white">
@@ -95,26 +108,29 @@ EN: Icons auto (normal + preview), bilingual docs."
 </p>
 
 ## ✨ Features
-- **Load last theme** at startup, fallback to a **default** if none.
+- **Load last theme** at startup; fallback to **default** otherwise.
 - Interactive menu **`mythemes`**: number → apply, **`pN`** → preview, **`aN`** → apply, **`c`/`q`** → cancel/quit.
-- **Custom themes**: **add/remove** easily (JSON-based).
+- **Custom themes**: easily **add/remove** (JSON-based).
 - **Icons** in `ls`/`Get-ChildItem` via **Terminal-Icons** (auto-import).
 - **Preview** in a new window/tab (no profile), loads theme **and** Terminal-Icons.
-- Adaptive colors, **high-contrast toggle**, robust error handling.
+- **Automatic GitHub URL correction**: `github.com/.../blob/...` and `.../refs/heads/...` are normalized to `raw.githubusercontent.com/...` when performing HTTP requests (we hook **Invoke-WebRequest/Invoke-RestMethod**).
+- **Startup self-test**: prints **“✅ Blob-Fix aktiv (Profil geladen)”** / “Blob-Fix active (profile loaded)” if hooked; otherwise a warning.
+- Robust error handling, adaptive colors, **high contrast toggle**.
 
-## 📸 Screenshot
-![PowerShell Theme Screenshot](Images/screenshot1.png)
+## 📸 Screenshots
+- Prompt & menu: `Images/screenshot1.png`
+- Optional: Bundesliga segment in a theme (FC Bayern live/next match via OpenLigaDB).
 
 ## 🧩 Requirements
-- **PowerShell 7**
+- **PowerShell 7** (tested with 7.6 Preview — see Troubleshooting)
 - **oh-my-posh**
 - **Nerd Font** in Windows Terminal (e.g., *FiraCode Nerd Font Mono*)
-- **Terminal-Icons** (install once; auto-imported in the profile):
+- **Terminal-Icons** (install once; auto-imported):
 ```powershell
 Install-Module Terminal-Icons -Scope CurrentUser
 ```
 
-> In **Windows Terminal → PowerShell profile → Appearance → Font**, select your **Nerd Font** (e.g., *FiraCode Nerd Font Mono*), otherwise icons won’t show.
+> In **Windows Terminal → PowerShell → Appearance → Font**, choose your **Nerd Font** (e.g., *FiraCode Nerd Font Mono*), otherwise icons won’t render.
 
 ## ⚙️ Install / Update
 ```powershell
@@ -134,38 +150,48 @@ Copy-Item .\Microsoft.PowerShell_profile.ps1 $PROFILE -Force
 
 ## 🧑‍💻 Usage
 ```powershell
-mythemes      # open menu
-3             # apply theme #3
-p3            # preview theme #3 in new window/tab
-a3            # apply theme #3 directly
-q             # quit
+mythemes
+3
+p3
+a3
+q
 ```
-**Custom Themes**  
+### Custom themes
 - File: `%USERPROFILE%\.omp_custom_themes.json` (auto)  
-- Fields: `Name`, `Url`  
+- Fields: `Name`, `Url` (accepts **raw** and **blob** GitHub links — blob gets **auto-corrected** on fetch)  
 - Alternatively: `Add-CustomTheme` / `Remove-CustomTheme`
 
 ## 🧰 Troubleshooting
-- **Missing icons?** Nerd Font active? `Terminal-Icons` installed/loaded?
-- **Preview without icons?** Script imports Terminal-Icons there explicitly; ensure the preview window also uses the Nerd Font (Windows Terminal as default host recommended).
+- **“Not valid JSON” with GitHub URL?**  
+  Prefer **Raw**: `https://raw.githubusercontent.com/<user>/<repo>/<branch>/<path>.omp.json`  
+  *Note*: With the **blob fix**, `.../blob/...` now gets **auto-corrected** during HTTP fetch. If it still fails, verify:
+  1) Are you running with `pwsh -NoProfile`? (Fix isn’t loaded.)  
+  2) Are you in **Windows PowerShell 5.1** instead of **PowerShell 7**? (Different profile.)  
+  3) A module overrides `Invoke-WebRequest`/`Invoke-RestMethod` later?  
+  4) A tool uses **HttpClient** directly (bypassing PowerShell cmdlets)?
+- **PowerShell 7.6 Preview:**
+  - Replaced `PSBoundParameters.Clone()` with a manual parameter copy.
+  - Removed `Uri` alias conflict (only `'U'` alias kept).  
+- **Missing icons?** Nerd Font enabled and Terminal-Icons installed/loaded?
+- **Preview without icons?** Preview explicitly imports Terminal-Icons; ensure preview host uses Nerd Font.
 - **Low contrast?** Run `Toggle-ThemeContrast`.
 
 ## 🏷️ Versioning & Releases
 - Tags: `v1.0`, `v1.1`, …  
 - Releases: GitHub → **Releases**
 
-**Create a new release (e.g., v1.1)**
+**Create a new release (e.g., v1.2)**
 ```powershell
-git tag v1.1
-git push origin v1.1
+git tag v1.2
+git push origin v1.2
 
-# GitHub CLI (recommended)
-gh release create v1.1 `
-  --title "Version 1.1" `
-  --notes "DE: Icons automatisch (normal + Preview), zweisprachige Doku.
-EN: Icons auto (normal + preview), bilingual docs."
+# GitHub-CLI (recommended)
+gh release create v1.2 `
+  --title "Version 1.2" `
+  --notes "DE: Blob fix, self-test, docs updated.
+EN: Blob fix, self-test, docs updated."
 # Optionally attach a file:
-# gh release create v1.1 Microsoft.PowerShell_profile.ps1 --title "Version 1.1" --notes "..."
+# gh release create v1.2 Microsoft.PowerShell_profile.ps1 --title "Version 1.2" --notes "..."
 ```
 
 ---
