@@ -16,7 +16,7 @@
 
 **Startkarte beim Öffnen der Konsole** – aktives Theme, Pfade, Versionen und Cache-Status:
 
-![Startkarte](Images/startup-card.png)
+![Startkarte](Images/startup-card-color.png)
 
 ## ✨ Features
 - **WPF-Theme-Manager** (`mythemes`) mit Toolbar: *Laden, Repair, Add, Remove, Preview, Render, Apply, Close*.
@@ -95,7 +95,7 @@ gh release create v2.0 --title "Version 2.0" --notes "WPF-Theme-Manager, Vorscha
 
 ## 📸 Screenshots
 ![Theme manager](Images/theme-manager.png)
-![Startup card](Images/startup-card.png)
+![Startup card](Images/startup-card-color.png)
 
 ## ✨ Features
 - **WPF theme manager** (`mythemes`) with toolbar: *Reload, Repair, Add, Remove, Preview, Render, Apply, Close*.

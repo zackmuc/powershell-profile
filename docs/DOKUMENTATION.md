@@ -50,7 +50,7 @@ Beim Öffnen wird das zuletzt angewendete Theme automatisch ausgewählt und gere
 **Darstellung**: Hell-/Dunkelmodus und Akzentfarbe werden aus der Windows-Registry gelesen. Unter Windows 11 bekommt das Fenster einen Acrylic-Hintergrund und einen Rahmen in Akzentfarbe (`DwmSetWindowAttribute`). Icons kommen aus *Segoe Fluent Icons*.
 
 ## 3. Startkarte
-![Startkarte](../Images/startup-card.png)
+![Startkarte](../Images/startup-card-color.png)
 
 | Zeile | Inhalt |
 |---|---|
