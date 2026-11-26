@@ -1,36 +1,43 @@
-# 🖥️ PowerShell-Profil & Theme Manager (DE/EN)
-> Persönliches PowerShell-Profil (pwsh 7) mit **oh-my-posh**, interaktivem **Theme-Manager**, Datei-/Ordner-**Icons** (Terminal-Icons), **automatischer GitHub-Blob→Raw-Korrektur**, sowie **Selbsttest** beim Start. Zweisprachige Doku – EN folgt unten.
+# 🖥️ PowerShell-Profil & Oh-My-Posh Theme Manager (DE/EN)
+> Persönliches PowerShell-7-Profil mit **oh-my-posh** und einem grafischen **Theme-Manager (WPF)**: Themes durchsuchen, als Bild-Vorschau ansehen, testen und mit einem Klick anwenden. Dazu eine **Startkarte** in der Konsole, ein **Vorschau-Cache** und automatische **GitHub/Gist → RAW**-Korrektur. Zweisprachige Doku – EN folgt unten.
 
 <p align="left">
   <img alt="PowerShell" src="https://img.shields.io/badge/PowerShell-7.x-5391FE?logo=powershell&logoColor=white">
   <img alt="Oh My Posh" src="https://img.shields.io/badge/oh--my--posh-enabled-success">
+  <img alt="Windows 11" src="https://img.shields.io/badge/Windows-11-0078D4?logo=windows11&logoColor=white">
   <img alt="Nerd Font" src="https://img.shields.io/badge/Nerd%20Font-required-informational">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-blue">
 </p>
 
-## ✨ Features
-- **Lädt automatisch das zuletzt verwendete Theme**, Fallback auf Default, falls keins vorhanden ist.
-- **Interaktives Menü `mythemes`**: Zahl → anwenden, `pN` → Vorschau, `aN` → Anwenden, `c`/`q` → Abbrechen/Beenden.
-- **Eigene Themes** (JSON) einfach hinzufügen/entfernen.
-- **Datei-/Ordner-Icons** durch `Terminal-Icons` (automatischer Import).
-- **Preview-Funktion**: Öffnet neues Fenster ohne Profil, lädt Theme + Icons.
-- **Automatische GitHub-Link-Korrektur**: wandelt `.../blob/...` oder `.../refs/heads/...` in `raw.githubusercontent.com/...` um (fix für oh-my-posh Theme-URLs).
-- **Selbsttest beim Start**: zeigt „✅ Blob-Fix aktiv (Profil geladen)“, falls aktiv; sonst Warnung.
-- **PowerShell 7.6 kompatibel**: ersetzt veraltetes `.Clone()` und behebt `Uri`-Alias-Konflikt.
-- Adaptive Farbkontraste, High-Contrast-Toggle, strukturierte Fehlermeldungen.
-
 ## 📸 Screenshots
-![Screenshot](Images/screenshot1.png)
+**Theme-Manager (`mythemes`)** – Built-in- und Custom-Themes, gerenderte Vorschau des ausgewählten Themes:
+
+![Theme-Manager](Images/theme-manager.png)
+
+**Startkarte beim Öffnen der Konsole** – aktives Theme, Pfade, Versionen und Cache-Status:
+
+![Startkarte](Images/startup-card.png)
+
+## ✨ Features
+- **WPF-Theme-Manager** (`mythemes`) mit Toolbar: *Laden, Repair, Add, Remove, Preview, Render, Apply, Close*.
+- **Zwei Listen**: eingebaute Themes und eigene Themes (JSON-Store), Mehrfachauswahl zum Entfernen.
+- **Bild-Vorschau** im Fenster: oh-my-posh rendert das Theme als PNG (`oh-my-posh config export image`).
+- **Vorschau-Cache** mit Metadaten (TTL, SHA-256-Hash, Änderungszeit) – neu gerendert wird nur bei Änderungen.
+- **Live-Preview** in einer separaten `pwsh`-Session ohne Profil – deine aktuelle Shell bleibt unverändert.
+- **Apply** in der aktuellen Session inkl. Löschen der oh-my-posh-Init-Caches (auch MSIX/Store-Installation).
+- **Automatische URL-Korrektur**: GitHub `blob`/`tree`/`raw`-Links und Gist-Seiten werden zu RAW-URLs.
+- **Toleranter JSON-Import**: Kommentare und überzählige Kommas in Theme-Dateien werden bereinigt.
+- **Auto-Repair** des Theme-Stores und **Auto-Apply** des zuletzt verwendeten Themes beim Start.
+- **Startkarte** in der Konsole (Theme, URL, Pfade, oh-my-posh-/PowerShell-Version, Cache- und Vorschau-Status).
+- **Windows-11-Optik**: Hell/Dunkel und Akzentfarbe von Windows, Acrylic-Hintergrund, Segoe-Fluent-Icons.
 
 ## 🧩 Voraussetzungen
-- **PowerShell 7** (getestet mit 7.6 Preview)
-- **oh-my-posh**
-- **Nerd Font** im Windows Terminal (z. B. *FiraCode Nerd Font Mono*)
-- **Terminal-Icons** (einmalig installieren, wird automatisch geladen)
-```powershell
-Install-Module Terminal-Icons -Scope CurrentUser
-```
-> Stelle im Windows Terminal → PowerShell → Darstellung → Schriftart deinen Nerd Font ein, sonst fehlen Icons.
+- **Windows 10/11** (für den WPF-Theme-Manager; Acrylic/Mica ab Windows 11)
+- **PowerShell 7** (getestet mit 7.7)
+- **oh-my-posh** (getestet mit 33.x), z. B. `winget install JanDeDobbeleer.OhMyPosh`
+- **Nerd Font** im Windows Terminal (z. B. *FiraCode Nerd Font Mono*)
+
+> Stelle im Windows Terminal → PowerShell → Darstellung → Schriftart deinen Nerd Font ein, sonst fehlen Symbole.
 
 ## ⚙️ Installation / Update
 ```powershell
@@ -44,73 +51,70 @@ Copy-Item .\Microsoft.PowerShell_profile.ps1 $PROFILE -Force
 
 ## 🧑‍💻 Nutzung
 ```powershell
-mythemes      # Menü öffnen
-3             # Theme 3 anwenden
-p3            # Vorschau von Theme 3
-a3            # Anwenden von Theme 3
-q             # Beenden
+mythemes          # Theme-Manager öffnen (Alias für Show-ThemeManager)
 ```
-### Custom Themes
-- Datei: `%USERPROFILE%\.omp_custom_themes.json` (automatisch erstellt)
-- Felder: `Name`, `Url` (unterstützt GitHub-Blob-Links – werden automatisch korrigiert)
-- Alternativ: `Add-CustomTheme` / `Remove-CustomTheme`
+| Button | Funktion |
+|---|---|
+| **Laden** | Listen neu einlesen |
+| **Repair** | Store-URLs in RAW-URLs umwandeln |
+| **Add** | Theme per URL (GitHub, Gist, RAW oder lokaler Pfad) hinzufügen |
+| **Remove** | Ausgewählte Custom-Themes entfernen (mit Rückfrage) |
+| **Preview** | Theme in neuem Fenster ausprobieren |
+| **Render** | Vorschau-Bild neu erzeugen (Cache ignorieren) |
+| **Apply** | Theme in der aktuellen Session aktivieren und als Standard merken |
 
-## 🧰 Troubleshooting
-- **Fehler „Kein valides JSON“ bei GitHub-Link?**
-  - Der Blob-Fix korrigiert Links automatisch.
-  - Prüfe:
-    1) Kein Start mit `pwsh -NoProfile`?
-    2) Richtiges Profil (PowerShell 7, nicht 5.1)?
-    3) Kein Modul überschreibt `Invoke-WebRequest`?
-    4) Tools mit `HttpClient` umgehen den Fix.
-- **PowerShell 7.6 Preview:**
-  - `.Clone()` entfernt → ersetzt durch manuelle Parameterkopie.
-  - `Uri`-Alias entfernt (nur `U` bleibt).
-- **Icons fehlen?** Nerd Font aktiv + Terminal-Icons installiert?
-- **Preview ohne Icons?** Preview lädt Icons manuell.
-- **Kontrast zu niedrig?** `Toggle-ThemeContrast` ausführen.
+### Eigene Themes per Befehl
+```powershell
+Add-CustomTheme -Name 'mein-theme' -Url 'https://github.com/user/repo/blob/main/mein.omp.json'
+Add-CustomTheme -Name 'mein-theme' -Url '...' -AutoRename   # bei Namenskonflikt "-1", "-2" anhängen
+Remove-CustomTheme -Name 'mein-theme'
+```
+
+### Dateien & Speicherorte
+| Datei | Zweck |
+|---|---|
+| `C:\_posh\.omp_custom_themes.json` | Eigene Themes (`Name`, `Url`) |
+| `C:\_posh\.previews\*.png` (+ `.meta.json`) | Vorschau-Cache |
+| `%USERPROFILE%\.posh_last_theme.txt` | Zuletzt angewendetes Theme |
+
+Ist `C:\_posh` nicht vorhanden, wird `%USERPROFILE%\_posh` bzw. `%LOCALAPPDATA%\oh-my-posh` verwendet.
+
+Ausführliche Doku (Konfiguration, Funktionsreferenz, Troubleshooting): **[docs/DOKUMENTATION.md](docs/DOKUMENTATION.md)**
 
 ## 🏷️ Versionierung & Releases
 ```powershell
-git tag v1.3
-git push origin main
-git push origin v1.3
-```
-Neuen Release (mit GitHub CLI):
-```powershell
-gh release create v1.3 `
-  --title "Version 1.3" `
-  --notes "Blob-Fix, Selbsttest, README aktualisiert."
+git tag v2.0
+git push origin v2.0
+gh release create v2.0 --title "Version 2.0" --notes "WPF-Theme-Manager, Vorschau-Cache, Startkarte."
 ```
 
 ---
 
-# 🖥️ PowerShell Profile & Theme Manager (EN)
-> Personal PowerShell profile (pwsh 7) with **oh-my-posh**, interactive **theme manager**, **file/folder icons**, automatic **GitHub blob→raw correction**, and a **startup self-test**.
-
-## ✨ Features
-- Automatically loads the last used theme; falls back to default if none is set.
-- Interactive menu `mythemes`: number → apply, `pN` → preview, `aN` → apply, `c`/`q` → quit.
-- Add/remove custom themes (JSON-based).
-- File/folder icons via Terminal-Icons (auto-import).
-- Preview mode: opens a new window without profile, loads theme + icons.
-- Automatic GitHub link correction: converts `.../blob/...` and `.../refs/heads/...` to `raw.githubusercontent.com/...`.
-- Startup self-test: prints “✅ Blob-Fix active (profile loaded)” if hooked.
-- PowerShell 7.6 compatible (manual param copy instead of `.Clone()`).
-- Adaptive colors, error handling, and contrast toggle.
+# 🖥️ PowerShell Profile & Oh-My-Posh Theme Manager (EN)
+> Personal PowerShell 7 profile with **oh-my-posh** and a graphical **theme manager (WPF)**: browse themes, see rendered image previews, try them out and apply them with one click. Plus a console **startup card**, a **preview cache** and automatic **GitHub/Gist → RAW** URL correction.
 
 ## 📸 Screenshots
-![Screenshot](Images/screenshot1.png)
+![Theme manager](Images/theme-manager.png)
+![Startup card](Images/startup-card.png)
+
+## ✨ Features
+- **WPF theme manager** (`mythemes`) with toolbar: *Reload, Repair, Add, Remove, Preview, Render, Apply, Close*.
+- **Two lists**: built-in themes and custom themes (JSON store), multi-select for removal.
+- **Image preview** in the window, rendered by `oh-my-posh config export image`.
+- **Preview cache** with metadata (TTL, SHA-256 hash, mtime) – re-renders only when the theme changed.
+- **Live preview** in a separate `pwsh` session without profile – your current shell stays untouched.
+- **Apply** in the current session, including clearing oh-my-posh init caches (also for MSIX/Store installs).
+- **Automatic URL correction**: GitHub `blob`/`tree`/`raw` links and Gist pages are converted to RAW URLs.
+- **Lenient JSON import**: comments and trailing commas in theme files are cleaned up.
+- **Auto-repair** of the theme store and **auto-apply** of the last used theme on startup.
+- **Startup card** in the console (theme, URL, paths, oh-my-posh/PowerShell version, cache and preview status).
+- **Windows 11 look**: follows Windows light/dark mode and accent color, acrylic backdrop, Segoe Fluent icons.
 
 ## 🧩 Requirements
-- PowerShell 7 (tested with 7.6 Preview)
-- oh-my-posh
-- Nerd Font (e.g., FiraCode Nerd Font Mono)
-- Terminal-Icons:
-```powershell
-Install-Module Terminal-Icons -Scope CurrentUser
-```
-> Make sure your PowerShell font in Windows Terminal is a Nerd Font.
+- Windows 10/11 (WPF; acrylic/mica requires Windows 11)
+- PowerShell 7 (tested with 7.7)
+- oh-my-posh (tested with 33.x), e.g. `winget install JanDeDobbeleer.OhMyPosh`
+- A Nerd Font in Windows Terminal
 
 ## ⚙️ Installation / Update
 ```powershell
@@ -123,34 +127,14 @@ Copy-Item .\Microsoft.PowerShell_profile.ps1 $PROFILE -Force
 
 ## 🧑‍💻 Usage
 ```powershell
-mythemes
-3
-p3
-a3
-q
+mythemes                                              # open the theme manager
+Add-CustomTheme -Name 'my-theme' -Url '<GitHub/Gist/RAW URL or local path>'
+Remove-CustomTheme -Name 'my-theme'
 ```
-### Custom Themes
-- File: `%USERPROFILE%\.omp_custom_themes.json`
-- Fields: `Name`, `Url` (supports blob links → auto-corrected)
-- Cmdlets: `Add-CustomTheme`, `Remove-CustomTheme`
+Custom themes are stored in `C:\_posh\.omp_custom_themes.json`, previews in `C:\_posh\.previews`, the last applied theme in `%USERPROFILE%\.posh_last_theme.txt`.
 
-## 🧰 Troubleshooting
-- “Not valid JSON” on GitHub URL?
-  - Blob-Fix corrects it automatically.
-  - Check: NoProfile, PowerShell 7, no module override, no direct HttpClient.
-- PowerShell 7.6: fixed `Clone()` + alias conflicts.
-- Missing icons? Nerd Font + Terminal-Icons.
-- Preview without icons? Font in preview host.
-- Low contrast? Run `Toggle-ThemeContrast`.
-
-## 🏷️ Versioning & Releases
-```powershell
-git tag v1.3
-git push origin main
-git push origin v1.3
-gh release create v1.3 --title "Version 1.3" --notes "Blob fix, self-test, README updated."
-```
+Full documentation (configuration, function reference, troubleshooting): **[docs/DOKUMENTATION.md](docs/DOKUMENTATION.md)**
 
 ---
 
-© 2025 Peter Auerbacher — MIT License
+© 2025–2026 Peter Auerbacher — MIT License
