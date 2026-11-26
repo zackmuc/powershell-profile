@@ -476,6 +476,11 @@ function Apply-Theme([string]$Url){
   $omp = Get-OhMyPoshPath
   Clear-OMPInitCaches | Out-Null
 
+  # Das oh-my-posh-Init-Skript liest $global:_ompInitialized, ohne dass die Variable
+  # gesetzt sein muss. Unter StrictMode bricht das ab, sobald das Modul schon geladen ist
+  # ("Variable ... nicht festgelegt"). StrictMode gilt pro Scope -> hier nur für Apply aus.
+  Set-StrictMode -Off
+
   $init = & $omp init pwsh --config $cfg
   if ($init) { Invoke-Expression $init }
 
@@ -1183,7 +1188,8 @@ try {
       # Do not clear generated init files before Oh My Posh starts.
       $omp = Get-OhMyPoshPath
       $init = & $omp init pwsh --config $lastTheme
-      if ($init) { Invoke-Expression $init }
+      # Eigener Scope ohne StrictMode (siehe Apply-Theme), z. B. bei erneutem ". $PROFILE"
+      if ($init) { & { Set-StrictMode -Off; Invoke-Expression $init } }
       $env:POSH_THEME = $lastTheme
     }
   }
