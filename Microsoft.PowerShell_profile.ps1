@@ -546,6 +546,7 @@ function Apply-ThemeToThemeManagerWindow {
   }
 
   Set-BrushResource $Window 'Accent' $accent
+  Set-BrushResource $Window 'SelBg'  ([System.Windows.Media.Color]::FromArgb(90, $accent.R, $accent.G, $accent.B))
 }
 
 # ============================================================================
@@ -621,6 +622,7 @@ $xml = @"
     <SolidColorBrush x:Key="Accent" />
     <SolidColorBrush x:Key="BtnBg" />
     <SolidColorBrush x:Key="BtnHover" />
+    <SolidColorBrush x:Key="SelBg" />
 
     <!-- Icon Font -->
     <FontFamily x:Key="IconFont">Segoe Fluent Icons</FontFamily>
@@ -676,6 +678,37 @@ $xml = @"
       <Setter Property="Padding" Value="2"/>
       <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
       <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+    </Style>
+
+    <!-- Eigene Zeilen-Vorlage: Standard-Auswahl (weiß) wäre mit heller Schrift unlesbar -->
+    <Style TargetType="ListViewItem">
+      <Setter Property="Foreground" Value="{DynamicResource Fg}"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Padding" Value="2,3"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ListViewItem">
+            <Border x:Name="Bd"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="Transparent"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="{TemplateBinding Padding}">
+              <GridViewRowPresenter Columns="{TemplateBinding GridView.ColumnCollection}"
+                                    Content="{TemplateBinding Content}"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BtnHover}"/>
+              </Trigger>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SelBg}"/>
+                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
     </Style>
 
     <Style TargetType="StatusBar">
