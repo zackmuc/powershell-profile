@@ -488,7 +488,8 @@ function Apply-Theme([string]$Url){
 function Get-WindowsAppTheme {
   try {
     $p = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -ErrorAction Stop
-    return (if($p.AppsUseLightTheme -eq 0){ 'Dark' } else { 'Light' })
+    if ($p.AppsUseLightTheme -eq 0) { return 'Dark' }
+    return 'Light'
   } catch { return 'Dark' }
 }
 
